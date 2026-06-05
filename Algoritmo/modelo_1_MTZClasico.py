@@ -12,10 +12,9 @@ df = pd.read_excel(archivo_excel, index_col=0)
 ciudades = list(df.index)
 n = len(ciudades)
 
-# Convertir el DataFrame en un diccionario de distancias para facilitar el acceso
-c = df.to_dict()
+# Convertir el DataFrame en un diccionario de distancias
 
-# 2. Registrar el tiempo de inicio para el cuadro de indicadores
+# 2. Registrar el tiempo de inicio 
 tiempo_inicio = time.time()
 
 # 3. Crear el problema de optimización (Minimización)
@@ -38,14 +37,14 @@ for j in ciudades:
 for i in ciudades:
     prob += x[i][i] == 0
 
-# 7. Restricciones de Eliminación de Subtours (MTZ Clásico)
+# 7. Restricciones de Eliminación 
 ciudad_origen = ciudades[0]
 for i in ciudades:
     for j in ciudades:
         if i != ciudad_origen and j != ciudad_origen and i != j:
             prob += u[i] - u[j] + n * x[i][j] <= n - 1
 
-# 8. Invocar al Solver (CBC deshabilitando logs internos)
+# 8. Traer el Solver 
 pulp.LpSolverDefault.msg = False
 resultado_status = prob.solve()
 
@@ -53,7 +52,7 @@ resultado_status = prob.solve()
 tiempo_final = time.time()
 tiempo_total = tiempo_final - tiempo_inicio
 
-# 10. Mostrar los resultados en consola con la estructura exacta solicitada
+# 10. Mostrar los resultados en consola 
 print("--- RESULTADOS DEL MODELO MTZ CLASICO ---")
 print(f"Estado del Solver: {pulp.LpStatus[resultado_status]}")
 
@@ -76,7 +75,7 @@ if pulp.LpStatus[resultado_status] == "Optimal":
                 ruta.append(j)
                 actual = j
                 break
-    ruta.append(ciudad_origen) # Retorno al origen
+    ruta.append(ciudad_origen) 
     print(" -> ".join(ruta))
 else:
     print("No se pudo encontrar una solución óptima.")
