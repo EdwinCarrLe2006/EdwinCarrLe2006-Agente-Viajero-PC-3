@@ -2,8 +2,7 @@ import pandas as pd
 import pulp
 import time
 
-# 1. Cargar la matriz de distancias desde el Excel generado por el Integrante B
-# Se utiliza la misma matriz de 12 ciudades para mantener la consistencia
+# 1. Cargar la matriz de distancias
 archivo_excel = r"c:\Users\Edwin CL\Desktop\ING SISTEMAS\CICLO[5]\IO\PC3\MATRIZ_DIST[80].xlsx"
 df = pd.read_excel(archivo_excel, index_col=0)
 
@@ -11,24 +10,20 @@ df = pd.read_excel(archivo_excel, index_col=0)
 ciudades = list(df.index)
 n = len(ciudades)
 
-# Convertir el DataFrame en un diccionario de distancias para facilitar el acceso
+# Convertir el DataFrame en un diccionario de distancias
 c = df.to_dict()
 
-# Definimos la ciudad de origen (la primera de la lista, ej: Ciudad_1)
+# Definimos la ciudad de origen
 ciudad_origen = ciudades[0]
 
-# 2. Registrar el tiempo de inicio para el cuadro de indicadores
+# 2. Registrar el tiempo de inicio
 tiempo_inicio = time.time()
 
-# 3. Crear el problema de optimización (Minimización)
+# 3. Crear el problema de optimización
 prob = pulp.LpProblem("TSP_Modelo_Gavish_Graves", pulp.LpMinimize)
 
 # 4. Declarar las Variables de Decisión
-# x[i][j] = Variable binaria (1 si se viaja de i a j, 0 de lo contrario)
 x = pulp.LpVariable.dicts("x", (ciudades, ciudades), cat='Binary')
-
-# y[i][j] = Variable continua que representa las toneladas que lleva el camión en el tramo i -> j
-# La carga máxima al salir no superará n - 1
 y = pulp.LpVariable.dicts("y", (ciudades, ciudades), lowBound=0, upBound=n-1, cat='Continuous')
 
 # 5. Definir la Función Objetivo: Minimizar la distancia total recorrida
@@ -36,33 +31,32 @@ prob += pulp.lpSum(c[i][j] * x[i][j] for i in ciudades for j in ciudades if i !=
 
 # 6. Configurar las Restricciones Generales
 
-# Restricción A: Salir exactamente una vez de cada ciudad i
+# Restricción A: 
 for i in ciudades:
     prob += pulp.lpSum(x[i][j] for j in ciudades if i != j) == 1
 
-# Restricción B: Llegar exactamente una vez a cada ciudad j
+# Restricción B: 
 for j in ciudades:
     prob += pulp.lpSum(x[i][j] for i in ciudades if i != j) == 1
 
-# Restricción C: Impedir que una ciudad viaje a sí misma (diagonal nula)
+# Restricción C: 
 for i in ciudades:
     prob += x[i][i] == 0
 
-# 7. Restricciones de Eliminación de Subtours (Balance de Flujo de Gavish & Graves)
+# 7. Restricciones de Eliminación de Subtours
 for j in ciudades:
     if j != ciudad_origen:
-        # Carga que entra a 'j' menos la carga que sale de 'j' debe ser exactamente igual a 1 tonelada
         flujo_entrada = pulp.lpSum(y[i][j] for i in ciudades if i != j)
         flujo_salida = pulp.lpSum(y[j][k] for k in ciudades if k != j)
         prob += (flujo_entrada - flujo_salida) == 1
 
-# Restricción de acoplamiento: El camión solo lleva carga por los arcos que efectivamente decide recorrer
+# Restricción de acoplamiento:
 for i in ciudades:
     for j in ciudades:
         if i != j:
             prob += y[i][j] <= (n - 1) * x[i][j]
 
-# 8. Invocar al Solver (Usa CBC deshabilitando logs internos)
+# 8. Traer al Solver:
 pulp.LpSolverDefault.msg = False
 prob.solve()
 
@@ -71,7 +65,7 @@ tiempo_final = time.time()
 tiempo_total = tiempo_final - tiempo_inicio
 resultado_status = prob.status
 
-# 10. Mostrar los resultados en consola con la estructura exacta solicitada
+# 10. Mostrar los resultados en consola
 print("--- RESULTADOS DEL MODELO GAVISH & GRAVES ---")
 print(f"Estado del Solver: {pulp.LpStatus[resultado_status]}")
 
@@ -94,7 +88,7 @@ if pulp.LpStatus[resultado_status] == "Optimal":
                 ruta.append(j)
                 actual = j
                 break
-    ruta.append(ciudad_origen) # Retorno al origen
+    ruta.append(ciudad_origen)
     print(" -> ".join(ruta))
 else:
     print("No se pudo encontrar una solución óptima.")
