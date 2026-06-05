@@ -2,28 +2,27 @@ import pandas as pd
 import pulp
 import time
 
-# 1. Cargar la matriz de distancias desde el Excel generado por el Integrante B
+# 1. Cargar la matriz de distancias 
 archivo_excel = r"c:\Users\Edwin CL\Desktop\ING SISTEMAS\CICLO[5]\IO\PC3\matriz_distancias(43).xlsx"
 df = pd.read_excel(archivo_excel, index_col=0)
 
-# Obtener el número de ciudades (n) y sus nombres
+# Obtener el número de ciudades y sus nombres
 ciudades = list(df.index)
 n = len(ciudades)
 
 # Convertir el DataFrame en un diccionario de distancias
 c = df.to_dict()
 
-# Definir el conjunto de etapas o turnos de viaje (de 1 hasta n)
+# Definir el conjunto de etapas
 etapas = list(range(1, n + 1))
 
-# 2. Registrar el tiempo de inicio para el cuadro de indicadores
+# 2. Registrar el tiempo de inicio
 tiempo_inicio = time.time()
 
-# 3. Crear el problema de optimización (Minimización)
+# 3. Crear el problema de optimización 
 prob = pulp.LpProblem("TSP_Modelo_Diaby_Corregido", pulp.LpMinimize)
 
-# 4. Declarar las Variables de Decisión Binarias (CORRECCIÓN CRÍTICA)
-# Cambiamos cat='Continuous' por cat='Binary' para evitar la relajación y soluciones fraccionadas
+# 4. Declarar las Variables de Decisión Binarias
 x = pulp.LpVariable.dicts("x", (ciudades, ciudades, etapas), cat='Binary')
 
 # 5. Definir la Función Objetivo: Minimizar la distancia total recorrida
@@ -31,34 +30,34 @@ prob += pulp.lpSum(c[i][j] * x[i][j][s] for i in ciudades for j in ciudades if i
 
 # 6. Configurar las Restricciones Lineales del Enfoque de Diaby
 
-# Restricción A: En cada etapa 's' del viaje, solo se puede recorrer exactamente un tramo
+# Restricción A: 
 for s in etapas:
     prob += pulp.lpSum(x[i][j][s] for i in ciudades for j in ciudades if i != j) == 1
 
-# Restricción B: Cada ciudad 'i' debe ser abandonada exactamente en una de las etapas
+# Restricción B: 
 for i in ciudades:
     prob += pulp.lpSum(x[i][j][s] for j in ciudades if i != j for s in etapas) == 1
 
-# Restricción C: A cada ciudad 'j' se debe llegar exactamente en una de las etapas
+# Restricción C: 
 for j in ciudades:
     prob += pulp.lpSum(x[i][j][s] for i in ciudades if i != j for s in etapas) == 1
 
-# Restricción D: Conservación del flujo de etapas (Acoplamiento)
+# Restricción D: 
 for j in ciudades:
     for s in etapas:
-        s_siguiente = s + 1 if s < n else 1  # Conexión cíclica de retorno
+        s_siguiente = s + 1 if s < n else 1  
         
         flujo_entrada = pulp.lpSum(x[i][j][s] for i in ciudades if i != j)
         flujo_salida = pulp.lpSum(x[j][k][s_siguiente] for k in ciudades if k != j)
         
         prob += flujo_entrada == flujo_salida
 
-# Restricción E: Impedir viajes a sí mismo (diagonal nula)
+# Restricción E: 
 for i in ciudades:
     for s in etapas:
         prob += x[i][i][s] == 0
 
-# 7. Invocar al Solver (CBC deshabilitando logs internos)
+# 7. Traer al Solver
 pulp.LpSolverDefault.msg = False
 resultado_status = prob.solve()
 
@@ -66,7 +65,7 @@ resultado_status = prob.solve()
 tiempo_final = time.time()
 tiempo_total = tiempo_final - tiempo_inicio
 
-# 9. Mostrar los resultados en consola con la estructura unificada exacta
+# 9. Mostrar los resultados en consola
 print("--- RESULTADOS DEL MODELO MOUSTAPHA DIABY ---")
 print(f"Estado del Solver: {pulp.LpStatus[resultado_status]}")
 
@@ -81,8 +80,6 @@ print(f"numero de ciudades: {n}\n")
 
 if pulp.LpStatus[resultado_status] == "Optimal":
     print("Ruta óptima encontrada:")
-    
-    # Reconstrucción exacta y ordenada de la ruta basada en las etapas discretas
     ciudad_origen = ciudades[0]
     ruta = []
     
