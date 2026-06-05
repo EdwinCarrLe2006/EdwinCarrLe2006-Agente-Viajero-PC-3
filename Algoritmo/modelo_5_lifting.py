@@ -2,7 +2,7 @@ import pandas as pd
 import pulp
 import time
 
-# 1. Cargar la matriz de distancias desde el Excel generado por el Integrante B
+# 1. Cargar la matriz de distancias 
 archivo_excel = "matriz_distancias(12).xlsx" 
 df = pd.read_excel(archivo_excel, index_col=0)
 
@@ -13,18 +13,17 @@ n = len(ciudades)
 # Convertir el DataFrame en un diccionario de distancias
 c = df.to_dict()
 
-# Definimos la ciudad de origen (la primera de la lista)
+# Definimos la ciudad de origen
 ciudad_origen = ciudades[0]
 
-# 2. Registrar el tiempo de inicio para el cuadro de indicadores
+# 2. Registrar el tiempo de inicio
 tiempo_inicio = time.time()
 
-# 3. Crear el problema de optimización (Minimización)
+# 3. Crear el problema de optimización
 prob = pulp.LpProblem("TSP_Modelo_MTZ_Lifting_Robustecido", pulp.LpMinimize)
 
 # 4. Declarar las Variables de Decisión
 x = pulp.LpVariable.dicts("x", (ciudades, ciudades), cat='Binary')
-# Para mayor robustez, limitamos estrictamente el rango de u entre 1 y n
 u = pulp.LpVariable.dicts("u", ciudades, lowBound=1, upBound=n, cat='Continuous')
 
 # 5. Definir la Función Objetivo: Minimizar la distancia total recorrida
@@ -41,23 +40,19 @@ for i in ciudades:
     prob += x[i][i] == 0
 
 # 7. Restricciones de Eliminación de Subtours con LIFTING ROBUSTECIDO
-# Fijamos el turno de la ciudad origen en 1 para estabilizar el sistema de ecuaciones
 prob += u[ciudad_origen] == 1
-
-# Aplicamos la inecuación de Lifting reforzada con cotas para evitar infactibilidad por costos 0 km
 for i in ciudades:
     for j in ciudades:
         if i != ciudad_origen and j != ciudad_origen and i != j:
-            # Reformulación con holgura matemática controlada para soportar costos nulos
             prob += u[i] - u[j] + n * x[i][j] + (n - 2) * x[j][i] <= n - 1
 
-# Restricción de exclusión mutua de tamaño 2 (Fundamental para mitigar el efecto de los ceros)
+# Restricción de exclusión mutua de tamaño 2
 for i in ciudades:
     for j in ciudades:
         if i != j:
             prob += x[i][j] + x[j][i] <= 1
 
-# 8. Invocar al Solver (CBC deshabilitando logs internos)
+# 8. Traer al Solver
 pulp.LpSolverDefault.msg = False
 prob.solve()
 
@@ -66,7 +61,7 @@ tiempo_final = time.time()
 tiempo_total = tiempo_final - tiempo_inicio
 resultado_status = prob.status
 
-# 10. Mostrar los resultados en consola con la estructura exacta unificada
+# 10. Mostrar los resultados en consola 
 print("--- RESULTADOS DEL MODELO MTZ CON LIFTING ---")
 print(f"Estado del Solver: {pulp.LpStatus[resultado_status]}")
 
@@ -89,7 +84,7 @@ if pulp.LpStatus[resultado_status] == "Optimal":
                 ruta.append(j)
                 actual = j
                 break
-    ruta.append(ciudad_origen) # Retorno al origen
+    ruta.append(ciudad_origen)
     print(" -> ".join(ruta))
 else:
     print("No se pudo encontrar una solución óptima.")
