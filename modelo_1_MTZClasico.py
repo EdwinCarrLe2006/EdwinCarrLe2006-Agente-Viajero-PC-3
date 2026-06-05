@@ -2,30 +2,21 @@ import pandas as pd
 import pulp
 import time
 
-# 1. Cargar la matriz de distancias desde el Excel generado 
-
-
 archivo_excel = r"c:\Users\Edwin CL\Desktop\ING SISTEMAS\CICLO[5]\IO\PC3\matriz_distancias(5).xlsx"
 df = pd.read_excel(archivo_excel, index_col=0)
-
-# Obtener el número de ciudades (n) y sus nombres
 ciudades = list(df.index)
 n = len(ciudades)
-
-# Convertir el DataFrame en un diccionario de distancias para facilitar el acceso
 c = df.to_dict()
 
-# 2. Registrar el tiempo de inicio para el cuadro de indicadores
 tiempo_inicio = time.time()
 
-# 3. Crear el problema de optimización (Minimización)
 prob = pulp.LpProblem("TSP_Modelo_MTZ_Clasico", pulp.LpMinimize)
 
-# 4. Declarar las Variables de Decisión
+
 x = pulp.LpVariable.dicts("x", (ciudades, ciudades), cat='Binary')
 u = pulp.LpVariable.dicts("u", ciudades, lowBound=1, upBound=n, cat='Continuous')
 
-# 5. Definir la Función Objetivo: Minimizar la distancia total recorrida
+
 prob += pulp.lpSum(c[i][j] * x[i][j] for i in ciudades for j in ciudades if i != j)
 
 # 6. Configurar las Restricciones Generales
