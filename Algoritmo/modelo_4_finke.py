@@ -2,7 +2,7 @@ import pandas as pd
 import pulp
 import time
 
-# 1. Cargar la matriz de distancias desde el Excel
+# 1. Cargar la matriz de distancias
 archivo_excel = r"c:\Users\Edwin CL\Desktop\ING SISTEMAS\CICLO[5]\IO\PC3\matriz_distancias(25).xlsx"
 df = pd.read_excel(archivo_excel, index_col=0)
 
@@ -10,7 +10,7 @@ df = pd.read_excel(archivo_excel, index_col=0)
 ciudades = list(df.index)
 n = len(ciudades)
 
-# Convertir el DataFrame en un diccionario de distancias CORREGIDO
+# Convertir el DataFrame en un diccionario de distancias
 c = df.to_dict(orient='index')
 
 # Definimos la ciudad de origen
@@ -44,26 +44,21 @@ for j in ciudades:
 for i in ciudades:
     prob += x[i][i] == 0
 
-# 7. Restricciones de Eliminación de Subtours (Flujo de Dos Productos de Finke)
-# CORRECCIÓN AQUÍ: z[i][j] fluye en el mismo sentido que y[i][j]
+# 7. Restricciones de Eliminación de Subtours 
 for i in ciudades:
     for j in ciudades:
         if i != j:
             prob += y[i][j] + z[i][j] == (n - 1) * x[i][j]
-
-# Restricciones de conservación de flujo para las mercancías
 for j in ciudades:
     if j != ciudad_origen:
         prob += pulp.lpSum(y[i][j] for i in ciudades if i != j) - pulp.lpSum(y[j][k] for k in ciudades if k != j) == 1
         prob += pulp.lpSum(z[j][k] for k in ciudades if k != j) - pulp.lpSum(z[i][j] for i in ciudades if i != j) == 1
-
-# Restricción de exclusión mutua de tamaño 2
 for i in ciudades:
     for j in ciudades:
         if i != j:
             prob += x[i][j] + x[j][i] <= 1
 
-# 8. Invocar al Solver
+# 8. Traer al Solver
 pulp.LpSolverDefault.msg = False
 prob.solve()
 
@@ -95,7 +90,7 @@ if pulp.LpStatus[resultado_status] == "Optimal":
                 ruta.append(j)
                 actual = j
                 break
-    ruta.append(ciudad_origen) # Retorno al origen
+    ruta.append(ciudad_origen) 
     print(" -> ".join(ruta))
 else:
     print("No se pudo encontrar una solución óptima.")
